@@ -26,7 +26,8 @@ class BittrexExchange(Exchange):
             'GOOD_TIL_CANCELLED')
         if not self._validate_req(req):
             print('Unable to pass limit order: %s' % req['message'])
-        return req
+        data = req['result']
+        return BittrexOrder(data, id=data['OrderId'])
 
     def sell_market(self, pair, quantity):
         pass
@@ -37,7 +38,9 @@ class BittrexExchange(Exchange):
             'GOOD_TIL_CANCELLED', 'LESS_THAN', value)
         if not self._validate_req(req):
             print('Unable to pass stop order: %s' % req['message'])
-        return req
+            return None
+        data = req['result']
+        return BittrexOrder(data, id=data['OrderId'])
 
     def get_tick(self, pair):
         req = self.conn1.get_ticker(pair)
@@ -58,7 +61,8 @@ class BittrexExchange(Exchange):
         req = self.conn.cancel(order.id)
         if not self._validate_req(req):
             print('Unable to cancel order: %s' % req['message'])
-        return req
+            return False
+        return True
 
     @staticmethod
     def _validate_req(req):

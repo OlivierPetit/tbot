@@ -45,25 +45,21 @@ while True:
         if tick['Last'] < entry:
             if trend != 'down':
                 print('down')
-                if order:
-                    req = exch.cancel_order(order)
-                    print(req)
-                    time.sleep(15)
-                req = exch.sell_stop(market, quantity, stop)
-                print(req)
-                time.sleep(15)
-                order = exch.get_open_orders(market)[0]
+                if order and exch.cancel_order(order):
+                    order = None
+                new_order = exch.sell_stop(market, quantity, stop)
+                if new_order:
+                    print(new_order)
+                    order = new_order
                 trend = 'down'
         else:
             if trend != 'up':
                 print('up')
-                if order:
-                    req = exch.cancel_order(order)
-                    print(req)
-                    time.sleep(15)
-                req = exch.sell_limit(market, quantity, exit)
-                print(req)
-                time.sleep(15)
-                order = exch.get_open_orders(market)[0]
+                if order and exch.cancel_order(order):
+                    order = None
+                new_order = exch.sell_limit(market, quantity, exit)
+                if new_order:
+                    print(new_order)
+                    order = new_order
                 trend = 'up'
     time.sleep(60)
