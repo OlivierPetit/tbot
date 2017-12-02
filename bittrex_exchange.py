@@ -18,7 +18,6 @@ class BittrexExchange(Exchange):
             api_key = None
             api_secret = None
         self.conn = Bittrex(api_key, api_secret, api_version=API_V2_0)
-        self.conn1 = Bittrex(api_key, api_secret)
 
     def sell_limit(self, pair, quantity, value):
         req = self.conn.trade_sell(
@@ -43,11 +42,11 @@ class BittrexExchange(Exchange):
         return BittrexOrder(data, id=data['OrderId'])
 
     def get_tick(self, pair):
-        req = self.conn1.get_ticker(pair)
+        req = self.conn.get_latest_candle(pair, 'oneMin')
         if not self._validate_req(req):
             print('Unable to get tick: %s' % req['message'])
             return None
-        return req['result']
+        return req['result'][0]
 
     def get_open_orders(self, pair):
         req = self.conn.get_open_orders(pair)

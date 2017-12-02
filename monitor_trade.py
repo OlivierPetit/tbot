@@ -42,7 +42,7 @@ while True:
     if tick:
         print(tick)
         # TODO(fl): need to abstract tick
-        if tick['Last'] < entry:
+        if tick['C'] < entry:
             if trend != 'down':
                 print('down')
                 if order and exch.cancel_order(order):
