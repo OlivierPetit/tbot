@@ -55,7 +55,7 @@ class BittrexExchange(Exchange):
             return []
 
     def cancel_order(self, order):
-        req = self.conn1.cancel(order.id)
+        req = self.conn.cancel(order.id)
         if not self._validate_req(req):
             print('Unable to cancel order: %s' % req['message'])
         return req

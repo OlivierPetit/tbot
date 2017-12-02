@@ -1,1 +1,2 @@
-python-bittrex
+python-bittrex>=0.2.1
+
