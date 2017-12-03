@@ -19,6 +19,16 @@ def send_order(order, exch, func, *args, **kwargs):
     return order
 
 
+def monitor_order_completion(exch, market):
+    orders = exch.get_open_orders(market)
+    if len(orders) == 0:
+        print('order completed')
+        return True
+    else:
+        print('order still in place')
+        return False
+
+
 if len(sys.argv) != 6:
     print('Usage: %s <market> <quantity> <stop> <entry> <exit>' % sys.argv[0])
     sys.exit(1)
@@ -54,13 +64,17 @@ while True:
         # TODO(fl): need to abstract tick
         last = tick['C']
         if last < entry:
-            if trend != 'down':
+            if last < stop and monitor_order_completion(exch, market):
+                break
+            elif trend != 'down':
                 print('down')
                 order = send_order(order, exch, exch.sell_stop,
                                    market, quantity, stop)
                 trend = 'down'
         else:
-            if trend != 'up':
+            if last > exit and monitor_order_completion(exch, market):
+                break
+            elif trend != 'up':
                 print('up')
                 order = send_order(order, exch, exch.sell_limit,
                                    market, quantity, exit)
