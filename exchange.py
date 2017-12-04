@@ -31,6 +31,10 @@ class Exchange(ABC):
     def cancel_order(self, order):
         pass
 
+    @abstractmethod
+    def get_position(self, pair):
+        pass
+
 
 class OrderMeta(ABCMeta):
     _orders = {}

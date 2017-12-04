@@ -41,6 +41,24 @@ exit = float(sys.argv[5])
 
 exch = BittrexExchange(True)
 
+# Do some sanity checks
+
+currency = market.split('-')[1]
+
+while True:
+    position = exch.get_position(currency)
+    if position['Balance'] >= quantity:
+        break
+    orders = exch.get_open_orders(market)
+    if len(orders) == 0 or orders[0].data['OrderType'] != 'LIMIT_BUY':
+        print('no buy order for %s' % market)
+        sys.exit(1)
+    print('Not the correct balance: %.2f instead of more than %.2f' %
+          (position['Balance'], quantity))
+    time.sleep(60)
+
+# Check if we have an open order
+
 orders = exch.get_open_orders(market)
 
 if len(orders) > 0:

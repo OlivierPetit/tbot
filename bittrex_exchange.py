@@ -63,6 +63,13 @@ class BittrexExchange(Exchange):
             return False
         return True
 
+    def get_position(self, pair):
+        req = self.conn.get_balance(pair)
+        if not self._validate_req(req):
+            print('Unable to get position: %s' % req['message'])
+            return None
+        return req['result']
+
     @staticmethod
     def _validate_req(req):
         return ('success' in req and req['success'] is True)
