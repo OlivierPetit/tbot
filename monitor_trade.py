@@ -47,7 +47,7 @@ currency = market.split('-')[1]
 
 while True:
     position = exch.get_position(currency)
-    if position['Balance'] >= quantity:
+    if position and position['Balance'] >= quantity:
         break
     orders = exch.get_open_orders(market)
     if len(orders) == 0 or orders[0].data['OrderType'] != 'LIMIT_BUY':
@@ -59,8 +59,13 @@ while True:
               tick['L'])
         exch.cancel_order(orders[0])
         sys.exit(0)
-    print('Not the correct balance: %.2f instead of more than %.2f' %
-          (position['Balance'], quantity))
+    if position:
+        print('Not the correct balance: %.2f instead of more than %.2f' %
+              (position['Balance'], quantity))
+    else:
+        print(
+            'Not the correct balance: no position instead of more than %.2f' %
+            (quantity))
     time.sleep(60)
 
 # Check if we have an open order
