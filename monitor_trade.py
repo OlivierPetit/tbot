@@ -29,83 +29,100 @@ def monitor_order_completion(exch, market):
         return False
 
 
-if len(sys.argv) != 6:
-    print('Usage: %s <market> <quantity> <stop> <entry> <exit>' % sys.argv[0])
-    sys.exit(1)
+def convert(s):
+    if s[-1] == 's':
+        val = float(s[:-1]) * 0.00000001
+    elif s[-1] == 'S':
+        val = float(s[:-1]) * 0.000001
+    else:
+        val = float(s)
+    return val
 
-market = sys.argv[1]
-quantity = float(sys.argv[2])
-stop = float(sys.argv[3])
-entry = float(sys.argv[4])
-exit = float(sys.argv[5])
 
-exch = BittrexExchange(True)
-
-# Do some sanity checks
-
-currency = market.split('-')[1]
-
-while True:
-    position = exch.get_position(currency)
-    if position and position['Balance'] >= quantity:
-        break
-    orders = exch.get_open_orders(market)
-    if len(orders) == 0 or orders[0].data['OrderType'] != 'LIMIT_BUY':
-        print('no buy order for %s' % market)
+def main():
+    if len(sys.argv) != 6:
+        print('Usage: %s <market> <quantity> <stop> <entry> <exit>' %
+              sys.argv[0])
         sys.exit(1)
-    tick = exch.get_tick(market)
-    if tick and tick['L'] < stop:
-        print('Trade invalidated (low price %f), cancelling order' %
-              tick['L'])
-        exch.cancel_order(orders[0])
-        sys.exit(0)
-    if position:
-        print('Not the correct balance: %.2f instead of more than %.2f' %
-              (position['Balance'], quantity))
-    else:
-        print(
-            'Not the correct balance: no position instead of more than %.2f' %
-            (quantity))
-    time.sleep(60)
 
-# Check if we have an open order
+    market = sys.argv[1]
+    quantity = float(sys.argv[2])
+    stop = convert(sys.argv[3])
+    entry = convert(sys.argv[4])
+    exit = convert(sys.argv[5])
 
-orders = exch.get_open_orders(market)
+    exch = BittrexExchange(True)
 
-if len(orders) > 0:
-    order = orders[0]
+    # Do some sanity checks
 
-    # TODO(fl): need to abstract
-    if order.data['IsConditional']:
-        trend = 'down'
-    else:
-        trend = 'up'
-else:
-    trend = 'none'
-    order = None
+    currency = market.split('-')[1]
 
-print(trend)
-
-while True:
-    tick = exch.get_tick(market)
-    if tick:
-        print(market, tick)
-        # TODO(fl): need to abstract tick
-        last = tick['C']
-        if last < entry:
-            if last < stop and monitor_order_completion(exch, market):
-                break
-            elif trend != 'down':
-                print('down')
-                order = send_order(order, exch, exch.sell_stop,
-                                   market, quantity, stop)
-                trend = 'down'
+    while True:
+        position = exch.get_position(currency)
+        if position and position['Balance'] >= quantity:
+            break
+        orders = exch.get_open_orders(market)
+        if len(orders) == 0 or orders[0].data['OrderType'] != 'LIMIT_BUY':
+            print('no buy order for %s' % market)
+            sys.exit(1)
+        tick = exch.get_tick(market)
+        if tick and tick['L'] < stop:
+            print('Trade invalidated (low price %f), cancelling order' %
+                  tick['L'])
+            exch.cancel_order(orders[0])
+            sys.exit(0)
+        if position:
+            print('Not the correct balance: %.2f instead of more than %.2f' %
+                  (position['Balance'], quantity))
         else:
-            if last > exit and monitor_order_completion(exch, market):
-                break
-            elif trend != 'up':
-                print('up')
-                order = send_order(order, exch, exch.sell_limit,
-                                   market, quantity, exit)
-                trend = 'up'
-    time.sleep(60)
+            print(
+                'Not the correct balance: no position instead of more than %.2f' %
+                (quantity))
+        time.sleep(60)
+
+    # Check if we have an open order
+
+    orders = exch.get_open_orders(market)
+
+    if len(orders) > 0:
+        print(orders[0].data)
+        order = orders[0]
+
+        # TODO(fl): need to abstract
+        if order.data['IsConditional']:
+            trend = 'down'
+        else:
+            trend = 'up'
+    else:
+        trend = 'none'
+        order = None
+
+    print(trend)
+
+    while True:
+        tick = exch.get_tick(market)
+        if tick:
+            print(market, tick)
+            # TODO(fl): need to abstract tick
+            last = tick['C']
+            if last < entry:
+                if last < stop and monitor_order_completion(exch, market):
+                    break
+                elif trend != 'down':
+                    print('down')
+                    order = send_order(order, exch, exch.sell_stop,
+                                       market, quantity, stop)
+                    trend = 'down'
+            else:
+                if last > exit and monitor_order_completion(exch, market):
+                    break
+                elif trend != 'up':
+                    print('up')
+                    order = send_order(order, exch, exch.sell_limit,
+                                       market, quantity, exit)
+                    trend = 'up'
+        time.sleep(60)
+
+
+if __name__ == "__main__":
+    main()
