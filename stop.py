@@ -3,6 +3,8 @@
 from bittrex_exchange import BittrexExchange
 import sys
 
+from monitor_trade import convert
+
 
 def get_orders(conn, market):
     return conn.get_open_orders(market)
@@ -23,7 +25,7 @@ if len(sys.argv) != 3:
     sys.exit(1)
 
 market = sys.argv[1]
-stop = float(sys.argv[2])
+stop = convert(sys.argv[2])
 
 currency = market.split('-')[1]
 
