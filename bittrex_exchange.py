@@ -33,7 +33,7 @@ class BittrexExchange(Exchange):
 
     def sell_stop(self, pair, quantity, value):
         req = self.conn.trade_sell(
-            pair, 'LIMIT', quantity, value,
+            pair, 'LIMIT', quantity, value / 2,
             'GOOD_TIL_CANCELLED', 'LESS_THAN', value)
         if not self._validate_req(req):
             print('Unable to pass stop order: %s' % req['message'])
