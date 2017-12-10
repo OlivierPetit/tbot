@@ -100,5 +100,9 @@ ENV/
 # mypy
 .mypy_cache/
 
+# VScode
+.vscode
+
 # project specific
 *.key
+
