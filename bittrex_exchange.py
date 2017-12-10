@@ -41,6 +41,24 @@ class BittrexExchange(Exchange):
         data = req['result']
         return BittrexOrder(data, id=data['OrderId'])
 
+    def buy_limit(self, pair, quantity, value):
+        req = self.conn.trade_buy(
+            pair, 'LIMIT', quantity, value,
+            'GOOD_TIL_CANCELLED')
+        if not self._validate_req(req):
+            print('Unable to pass buy limit order: %s' % req['message'])
+        data = req['result']
+        return BittrexOrder(data, id=data['OrderId'])
+
+    def buy_limit_range(self, pair, quantity, min_val, max_val):
+        req = self.conn.trade_buy(
+            pair, 'LIMIT', quantity, max_val,
+            'GOOD_TIL_CANCELLED', 'GREATER_THAN', min_val)
+        if not self._validate_req(req):
+            print('Unable to pass buy range order: %s' % req['message'])
+        data = req['result']
+        return BittrexOrder(data, id=data['OrderId'])
+
     def get_tick(self, pair):
         req = self.conn.get_latest_candle(pair, 'oneMin')
         if not self._validate_req(req):
@@ -80,5 +98,11 @@ class BittrexOrder(Order):
     # the same signature as __init__. id is a mandatory kwarg.
     def update(self, data, id=None):
         self.data = data
+
+    def is_sell_order(self):
+        return self.data['OrderType'] == 'LIMIT_SELL'
+
+    def is_buy_order(self):
+        return self.data['OrderType'] == 'LIMIT_BUY'
 
 # BittrexExchange.py ends here

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
-from bittrex_exchange import BittrexExchange
+import argparse
 import time
 import sys
+
+from bittrex_exchange import BittrexExchange
 
 
 def get_orders(conn, market):
@@ -40,18 +42,41 @@ def convert(s):
 
 
 def main():
-    if len(sys.argv) != 6:
-        print('Usage: %s <market> <quantity> <stop> <entry> <exit>' %
-              sys.argv[0])
-        sys.exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', "--buy", help='run a buy order',
+                        action="store_true")
+    parser.add_argument(
+        '-r', "--range",
+        help='floating number to compute buy range. Default 0.09.',
+        type=float, default=0.09)
+    parser.add_argument('market', help='name of the market like BTC-ETH')
+    parser.add_argument('quantity', help='quantity of coins', type=float)
+    parser.add_argument('stop', help='stop level')
+    parser.add_argument('entry', help='entry level')
+    parser.add_argument('exit', help='exit level')
+    args = parser.parse_args()
 
-    market = sys.argv[1]
-    quantity = float(sys.argv[2])
-    stop = convert(sys.argv[3])
-    entry = convert(sys.argv[4])
-    exit = convert(sys.argv[5])
+    market = args.market
+    quantity = args.quantity
+    stop = convert(args.stop)
+    entry = convert(args.entry)
+    exit = convert(args.exit)
 
     exch = BittrexExchange(True)
+
+    # Buy order if needed
+
+    if args.buy:
+        orders = exch.get_open_orders(market)
+        if len(orders) != 0:
+            for order in orders:
+                if order.is_buy_order():
+                    print('There is already a buy order. Aborting.')
+                    print(order.data)
+                    sys.exit(1)
+        val_max = entry + (entry - stop) * args.range
+        buy_order = exch.buy_limit_range(market, quantity, entry, val_max)
+        print(buy_order.data)
 
     # Do some sanity checks
 
@@ -62,7 +87,7 @@ def main():
         if position and position['Balance'] >= quantity:
             break
         orders = exch.get_open_orders(market)
-        if len(orders) == 0 or orders[0].data['OrderType'] != 'LIMIT_BUY':
+        if len(orders) == 0 or not orders[0].is_buy_order():
             print('no buy order for %s' % market)
             sys.exit(1)
         tick = exch.get_tick(market)
@@ -76,7 +101,8 @@ def main():
                   (position['Balance'], quantity))
         else:
             print(
-                'Not the correct balance: no position instead of more than %.2f' %
+                'Not the correct balance: no position '
+                'instead of more than %.2f' %
                 (quantity))
         time.sleep(60)
 

@@ -20,6 +20,14 @@ class Exchange(ABC):
         pass
 
     @abstractmethod
+    def buy_limit(self, pair, quantity, value):
+        pass
+
+    @abstractmethod
+    def buy_limit_range(self, pair, quantity, min_val, max_val):
+        pass
+
+    @abstractmethod
     def get_tick(self, pair):
         pass
 
@@ -57,3 +65,11 @@ class Order(ABC, metaclass=OrderMeta):
     @abstractmethod
     def update(*args, **kwargs):
         pass
+
+    @abstractmethod
+    def is_buy_order(self):
+        return False
+
+    @abstractmethod
+    def is_sell_order(self):
+        return False
