@@ -77,7 +77,7 @@ def main():
                     print(order.data)
                     sys.exit(1)
         position = exch.get_position(currency)
-        if position and position['Balance'] >= 0:
+        if position and position['Balance'] > 0:
             print('There is already a position on %s (%f). Not buying.' %
                   (currency, position['Balance']))
             print(position)
