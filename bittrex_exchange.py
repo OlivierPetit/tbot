@@ -2,7 +2,6 @@
 '''
 
 from tenacity import retry
-from tenacity import stop_after_attempt
 from tenacity import wait_exponential
 
 from bittrex.bittrex import API_V2_0

@@ -3,8 +3,6 @@
 from bittrex_exchange import BittrexExchange
 import sys
 
-from monitor_trade import convert
-
 
 def get_orders(conn, market):
     return conn.get_open_orders(market)
