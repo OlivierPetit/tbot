@@ -62,6 +62,8 @@ def main():
     entry = convert(args.entry)
     exit = convert(args.exit)
 
+    currency = market.split('-')[1]
+
     exch = BittrexExchange(True)
 
     # Buy order if needed
@@ -74,13 +76,17 @@ def main():
                     print('There is already a buy order. Aborting.')
                     print(order.data)
                     sys.exit(1)
-        val_max = entry + (entry - stop) * args.range
-        buy_order = exch.buy_limit_range(market, quantity, entry, val_max)
-        print(buy_order.data)
+        position = exch.get_position(currency)
+        if position and position['Balance'] >= 0:
+            print('There is already a position on %s (%f). Not buying.' %
+                  (currency, position['Balance']))
+            print(position)
+        else:
+            val_max = entry + (entry - stop) * args.range
+            buy_order = exch.buy_limit_range(market, quantity, entry, val_max)
+            print(buy_order.data)
 
     # Do some sanity checks
-
-    currency = market.split('-')[1]
 
     while True:
         position = exch.get_position(currency)
@@ -127,26 +133,25 @@ def main():
 
     while True:
         tick = exch.get_tick(market)
-        if tick:
-            print(market, tick)
-            # TODO(fl): need to abstract tick
-            last = tick['C']
-            if last < entry:
-                if last < stop and monitor_order_completion(exch, market):
-                    break
-                elif trend != 'down':
-                    print('down')
-                    order = send_order(order, exch, exch.sell_stop,
-                                       market, quantity, stop)
-                    trend = 'down'
-            else:
-                if last > exit and monitor_order_completion(exch, market):
-                    break
-                elif trend != 'up':
-                    print('up')
-                    order = send_order(order, exch, exch.sell_limit,
-                                       market, quantity, exit)
-                    trend = 'up'
+        print(market, tick)
+        # TODO(fl): need to abstract tick
+        last = tick['C']
+        if last < entry:
+            if last < stop and monitor_order_completion(exch, market):
+                break
+            elif trend != 'down':
+                print('down')
+                order = send_order(order, exch, exch.sell_stop,
+                                   market, quantity, stop)
+                trend = 'down'
+        else:
+            if last > exit and monitor_order_completion(exch, market):
+                break
+            elif trend != 'up':
+                print('up')
+                order = send_order(order, exch, exch.sell_limit,
+                                   market, quantity, exit)
+                trend = 'up'
         time.sleep(60)
 
 
