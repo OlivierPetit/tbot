@@ -90,6 +90,12 @@ class BittrexExchange(Exchange):
         return True
 
     @retry(wait=wait_exponential(max=MAX_DELAY))
+    def get_balances(self):
+        req = self.conn.get_balances()
+        self._validate_req(req, 'Unable to get balances')
+        return req['result']
+
+    @retry(wait=wait_exponential(max=MAX_DELAY))
     def get_position(self, pair):
         req = self.conn.get_balance(pair)
         self._validate_req(req, 'Unable to get position')
