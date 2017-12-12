@@ -2,6 +2,7 @@
 '''
 
 from tenacity import retry
+from tenacity import retry_if_exception_type
 from tenacity import wait_exponential
 
 from bittrex.bittrex import API_V2_0
@@ -18,6 +19,15 @@ class BittrexError(Exception):
     pass
 
 
+class BittrexRetryableError(BittrexError):
+    pass
+
+
+def bittrex_retry():
+    return retry(wait=wait_exponential(max=MAX_DELAY),
+                 retry=retry_if_exception_type(BittrexRetryableError))
+
+
 class BittrexExchange(Exchange):
     def __init__(self, auth=False):
         if auth:
@@ -29,7 +39,7 @@ class BittrexExchange(Exchange):
             api_secret = None
         self.conn = Bittrex(api_key, api_secret, api_version=API_V2_0)
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def sell_limit(self, pair, quantity, value):
         req = self.conn.trade_sell(
             pair, 'LIMIT', quantity, value,
@@ -38,11 +48,11 @@ class BittrexExchange(Exchange):
         data = req['result']
         return BittrexOrder(data, id=data['OrderId'])
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def sell_market(self, pair, quantity):
         pass
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def sell_stop(self, pair, quantity, value):
         req = self.conn.trade_sell(
             pair, 'LIMIT', quantity, value / 2,
@@ -51,7 +61,7 @@ class BittrexExchange(Exchange):
         data = req['result']
         return BittrexOrder(data, id=data['OrderId'])
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def buy_limit(self, pair, quantity, value):
         req = self.conn.trade_buy(
             pair, 'LIMIT', quantity, value,
@@ -60,7 +70,7 @@ class BittrexExchange(Exchange):
         data = req['result']
         return BittrexOrder(data, id=data['OrderId'])
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def buy_limit_range(self, pair, quantity, min_val, max_val):
         req = self.conn.trade_buy(
             pair, 'LIMIT', quantity, max_val,
@@ -69,32 +79,32 @@ class BittrexExchange(Exchange):
         data = req['result']
         return BittrexOrder(data, id=data['OrderId'])
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def get_tick(self, pair):
         req = self.conn.get_latest_candle(pair, 'oneMin')
         self._validate_req(req, 'Unable to get tick')
         return req['result'][0]
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def get_open_orders(self, pair):
         req = self.conn.get_open_orders(pair)
         self._validate_req(req, 'Unable to get open orders')
         return [BittrexOrder(data, id=data['OrderUuid'])
                 for data in req['result']]
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def cancel_order(self, order):
         req = self.conn.cancel(order.id)
         self._validate_req(req, 'Unable to cancel order')
         return True
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def get_balances(self):
         req = self.conn.get_balances()
         self._validate_req(req, 'Unable to get balances')
         return req['result']
 
-    @retry(wait=wait_exponential(max=MAX_DELAY))
+    @bittrex_retry()
     def get_position(self, pair):
         req = self.conn.get_balance(pair)
         self._validate_req(req, 'Unable to get position')
@@ -102,15 +112,18 @@ class BittrexExchange(Exchange):
 
     @staticmethod
     def _validate_req(req, msg=None, do_raise=True):
-        if not ('success' in req and req['success'] is True):
+        if 'success' in req and req['success'] is True:
+            return True
+        else:
             if msg:
                 print('%s: %s' % (msg, req.get('message', '<no message>')))
             if do_raise:
-                raise BittrexError(req.get('message', '<no message>'))
+                if req.get('message', None) in ('NO_API_RESPONSE',):
+                    raise BittrexRetryableError(req['message'])
+                else:
+                    raise BittrexError(req.get('message', '<no message>'))
             else:
                 return False
-        else:
-            return True
 
 
 class BittrexOrder(Order):
