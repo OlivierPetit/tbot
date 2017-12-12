@@ -13,8 +13,14 @@ market = sys.argv[1]
 exch = BittrexExchange(True)
 orders = exch.get_open_orders(market)
 for order in orders:
-    print('%s > [%s] %s(%d) %s(%2.8f) %s(%2.8f)' %
+    if order.data['Condition'] != 'NONE' :
+        print('%s > [%s] %s(%d) %s(%2.8f) %s(%2.8f)' %
           (market, order.data['Opened'], order.data['Exchange'],
            order.data['Quantity'], order.data['OrderType'],
            order.data['Limit'], order.data['Condition'],
            order.data['ConditionTarget']))
+    else:
+        print('%s > [%s] %s(%d) %s(%2.8f)' %
+          (market, order.data['Opened'], order.data['Exchange'],
+           order.data['Quantity'], order.data['OrderType'],
+           order.data['Limit']))
