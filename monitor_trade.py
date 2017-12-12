@@ -85,6 +85,12 @@ def main():
             val_max = entry + (entry - stop) * args.range
             buy_order = exch.buy_limit_range(market, quantity, entry, val_max)
             print(buy_order.data)
+            while True:
+                orders = exch.get_open_orders(market)
+                if len(orders) > 0 and orders[0].is_buy_order():
+                    break
+                print('Waiting for the buy order to become visible')
+                time.sleep(5)
 
     # Do some sanity checks
 
@@ -95,6 +101,7 @@ def main():
         orders = exch.get_open_orders(market)
         if len(orders) == 0 or not orders[0].is_buy_order():
             print('no buy order for %s' % market)
+            print([order.data for order in orders])
             sys.exit(1)
         tick = exch.get_tick(market)
         if tick and tick['L'] < stop:
