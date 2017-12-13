@@ -105,18 +105,20 @@ def main():
             sys.exit(1)
         tick = exch.get_tick(market)
         if tick and tick['L'] < stop:
-            print('Trade invalidated (low price %f), cancelling order' %
+            print(market,
+                  'Trade invalidated (low price %f), cancelling order' %
                   tick['L'])
             exch.cancel_order(orders[0])
             sys.exit(0)
         if position:
-            print('Not the correct balance: %.2f instead of more than %.2f' %
+            print(market,
+                  'Not the correct balance: %.2f instead of more than %.2f' %
                   (position['Balance'], quantity))
         else:
-            print(
-                'Not the correct balance: no position '
-                'instead of more than %.2f' %
-                (quantity))
+            print(market,
+                  'Not the correct balance: no position '
+                  'instead of more than %.2f' %
+                  (quantity))
         time.sleep(60)
 
     # Check if we have an open order
